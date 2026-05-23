@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Control del carro futurista</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+body {
+  background: radial-gradient(circle at center, #000015, #000);
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+h2 { margin-bottom: 20px; }
+.control {
+  position: relative;
+  width: 380px;
+  height: 210px;
+  background: rgba(0, 10, 20, 0.45);
+  border: 3px solid #00e5ff;
+  border-radius: 140px / 80px;
+  box-shadow: 0 0 40px #00e5ff55;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 35px;
+  transition: all 0.4s ease;
+  backdrop-filter: blur(8px);
+}
+.control.on {
+  box-shadow: 0 0 90px #00e5ff, inset 0 0 30px #00e5ff88;
+  border-color: #00fff2;
+}
+.dpad {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.dpad div {
+  position: absolute;
+  background: #001a33;
+  border: 2px solid #00e5ff;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: all 0.15s;
+  box-shadow: 0 0 10px #00e5ff33;
+}
+.dpad div.active {
+  background: #00e5ff;
+  box-shadow: 0 0 20px #00e5ff;
+}
+.dpad .up { top: 0; left: 26px; }
+.dpad .down { bottom: 0; left: 26px; }
+.dpad .left { left: 0; top: 26px; }
+.dpad .right { right: 0; top: 26px; }
+.joystick {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #001a33, #000);
+  border: 3px solid #00e5ff;
+  box-shadow: 0 0 20px #00e5ff55, inset 0 0 25px #00e5ff44;
+  overflow: hidden;
+  touch-action: none;
+}
+.joystick .inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, #00e5ff, #001220);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 20px #00e5ff;
+  transition: all 0.05s linear;
+}
+.power-btn {
+  position: absolute;
+  bottom: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #ff0080;
+  text-shadow: 0 0 10px #ff0080, 0 0 20px #8000ff;
+  box-shadow: 0 0 10px #ff008055;
+}
+.power-btn.on {
+  color: #ff66ff;
+  border: 2px solid #ff00ff;
+  text-shadow: 0 0 25px #ff00ff, 0 0 40px #ff0099;
+  box-shadow: 0 0 25px #ff00ff, inset 0 0 15px #ff008855;
+}
+.speed-btn {
+  border: 1px solid #00e5ff;
+  background: rgba(0, 229, 255, 0.12);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 10px;
+  min-width: 56px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.speed-btn:hover:not(:disabled) {
+  background: rgba(0, 229, 255, 0.24);
+}
+.speed-btn.active {
+  background: rgba(0, 229, 255, 0.35);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
+}
+.speed-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+a.volver {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: #00e5ff;
+  text-decoration: none;
+  font-size: 14px;
+}
+a.volver:hover { text-decoration: underline; }
+@keyframes neonPulse {
+  0%, 100% { box-shadow: 0 0 60px #00e5ff, inset 0 0 25px #00e5ff55; }
+  50% { box-shadow: 0 0 120px #00ffff, inset 0 0 45px #00e5ffaa; }
+}
+.control.on { animation: neonPulse 1.5s infinite alternate; }
+</style>
+</head>
+<body>
+
+<a href="/index.html" class="volver">⬅ Volver al panel</a>
+<h2>Control del carro</h2>
+
+<h2>Activa el control para mover el carro</h2>
+<div class="control-row" style="display:flex; justify-content:center; gap:22px; flex-wrap:wrap; align-items:flex-start; margin-top:18px;">
+  <div class="control" id="control">
+    <div class="dpad">
+      <div class="up"></div>
+      <div class="down"></div>
+      <div class="left"></div>
+      <div class="right"></div>
+    </div>
+    <div class="joystick" id="joystick">
+      <div class="inner" id="inner"></div>
+    </div>
+    <button id="power" class="power-btn">⏻</button>
+  </div>
+  <div class="control-info" style="min-width:240px; max-width:260px; text-align:center;">
+    <div id="modeLabel">Modo: manual</div>
+    <div style="margin-top:12px; font-weight:700; letter-spacing:0.5px;">Velocidad manual</div>
+    <div id="speedButtons" style="margin-top:10px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+      <button id="mvel1" class="speed-btn">Vel 1</button>
+      <button id="mvel2" class="speed-btn">Vel 2</button>
+      <button id="mvel3" class="speed-btn">Vel 3</button>
+    </div>
+    <div id="speedHelp" style="margin-top:10px; font-size:13px; color:#80d4ff;">Solo funciona en modo manual con el control activado.</div>
+    <div id="selectedPreset" style="margin-top:8px; font-size:13px; color:#b3f0ff;">Preset seleccionado: --</div>
+    <div id="speedStatus" style="margin-top:8px; font-size:13px; color:#a0f0ff;">Velocidad actual: --%</div>
+  </div>
+</div>
+
+<script>
+const power = document.getElementById('power');
+const control = document.getElementById('control');
+const joystick = document.getElementById('joystick');
+const inner = document.getElementById('inner');
+const dpad = {
+  up: document.querySelector('.up'),
+  down: document.querySelector('.down'),
+  left: document.querySelector('.left'),
+  right: document.querySelector('.right'),
+};
+const VEL_FLECHAS = 102;
+const VEL_JOYSTICK = 230;
+let encendido = false;
+let modoActual = 'manual';
+let lastCommand = 'stop';
+let speedButtons = null;
+let modeLabelEl = null;
+let ultimoEnvio = 0;
+
+function enviarMovimiento(cmd, vel = 0) {
+  const ahora = Date.now();
+  if (!encendido) return;
+  if (cmd === lastCommand && ahora - ultimoEnvio < 150) return;
+  lastCommand = cmd;
+  ultimoEnvio = ahora;
+  fetch(`/${cmd}?vel=${vel}`).catch(console.error);
+}
+
+function actualizarUIdeModo() {
+  if (!modeLabelEl) return;
+  modeLabelEl.textContent = `Modo: ${modoActual}`;
+  const buttons = speedButtons ? speedButtons.querySelectorAll('button') : [];
+  buttons.forEach(btn => {
+    btn.disabled = modoActual !== 'manual';
+    btn.style.opacity = modoActual === 'manual' ? '1' : '0.5';
+    btn.style.cursor = modoActual === 'manual' ? 'pointer' : 'not-allowed';
+  });
+}
+
+async function obtenerModo() {
+  try {
+    const res = await fetch('/getMode');
+    if (!res.ok) return modoActual;
+    const txt = (await res.text()).trim().toLowerCase();
+    if (['manual', 'autonomo'].includes(txt)) {
+      modoActual = txt;
+    }
+    return modoActual;
+  } catch (err) {
+    console.error('Error obteniendo modo:', err);
+    return modoActual;
+  }
+}
+
+async function refrescarModo() {
+  modoActual = await obtenerModo();
+  actualizarUIdeModo();
+}
+
+function cambiarEstadoControl() {
+  obtenerModo().then(async (modo) => {
+    modoActual = modo;
+    actualizarUIdeModo();
+    if (modo !== 'manual') {
+      alert('⚠️ Cambia a MODO MANUAL para usar el control.');
+      return;
+    }
+
+    encendido = !encendido;
+    control.classList.toggle('on', encendido);
+    power.classList.toggle('on', encendido);
+
+    try {
+      await fetch(`/toggleControl?state=${encendido ? 'on' : 'off'}`);
+    } catch (err) {
+      console.error('Error al cambiar estado:', err);
+    }
+
+    if (!encendido) detener();
+  });
+}
+
+let toqueActivo = false;
+power.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  if (toqueActivo) return;
+  toqueActivo = true;
+  cambiarEstadoControl();
+  setTimeout(() => (toqueActivo = false), 400);
+});
+power.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (toqueActivo) return;
+  cambiarEstadoControl();
+});
+
+function detener() {
+  if (lastCommand === 'stop') return;
+  lastCommand = 'stop';
+  fetch('/stop').catch(console.error);
+  Object.values(dpad).forEach(b => b.classList.remove('active'));
+  inner.style.left = '50%';
+  inner.style.top = '50%';
+}
+
+window.addEventListener('keydown', e => {
+  if (!encendido) return;
+  const key = e.key.toLowerCase();
+  switch (key) {
+    case 'w': case 'arrowup': dpad.up.classList.add('active'); enviarMovimiento('forward', VEL_FLECHAS); break;
+    case 's': case 'arrowdown': dpad.down.classList.add('active'); enviarMovimiento('backward', VEL_FLECHAS); break;
+    case 'a': case 'arrowleft': dpad.left.classList.add('active'); enviarMovimiento('left', VEL_FLECHAS); break;
+    case 'd': case 'arrowright': dpad.right.classList.add('active'); enviarMovimiento('right', VEL_FLECHAS); break;
+  }
+});
+window.addEventListener('keyup', e => {
+  if (['w','s','a','d','arrowup','arrowdown','arrowleft','arrowright'].includes(e.key.toLowerCase())) detener();
+});
+window.addEventListener('blur', detener);
+
+const esMovil = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+if (esMovil) {
+  let center = { x: 0, y: 0 };
+  const maxDistance = 40;
+  joystick.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const rect = joystick.getBoundingClientRect();
+    center = { x: rect.width / 2, y: rect.height / 2 };
+  }, { passive: false });
+  joystick.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!encendido) return;
+    const touch = e.touches[0];
+    const rect = joystick.getBoundingClientRect();
+    const dx = touch.clientX - rect.left - center.x;
+    const dy = touch.clientY - rect.top - center.y;
+    const distance = Math.min(maxDistance, Math.hypot(dx, dy));
+    const angle = Math.atan2(dy, dx);
+    const x = distance * Math.cos(angle);
+    const y = distance * Math.sin(angle);
+    inner.style.left = `calc(50% + ${x}px)`;
+    inner.style.top = `calc(50% + ${y}px)`;
+    let cmd = 'stop';
+    if (y < -15) cmd = 'forward';
+    else if (y > 15) cmd = 'backward';
+    else if (x < -15) cmd = 'left';
+    else if (x > 15) cmd = 'right';
+    enviarMovimiento(cmd, VEL_JOYSTICK);
+    dpad.up.classList.toggle('active', cmd === 'forward');
+    dpad.down.classList.toggle('active', cmd === 'backward');
+    dpad.left.classList.toggle('active', cmd === 'left');
+    dpad.right.classList.toggle('active', cmd === 'right');
+  }, { passive: false });
+  const stopTouch = e => { e.preventDefault(); detener(); };
+  joystick.addEventListener('touchend', stopTouch, { passive: false });
+  joystick.addEventListener('touchcancel', stopTouch, { passive: false });
+  document.addEventListener('touchend', stopTouch, { passive: false });
+}
+
+speedButtons = document.getElementById('speedButtons');
+modeLabelEl = document.getElementById('modeLabel');
+const speedStatusEl = document.getElementById('speedStatus');
+const selectedPresetEl = document.getElementById('selectedPreset');
+const presetValues = [30, 60, 90];
+let selectedPresetLevel = 0;
+
+function actualizarPresetUI(level) {
+  selectedPresetLevel = level;
+  if (!selectedPresetEl) return;
+  if (level >= 1 && level <= 3) {
+    selectedPresetEl.textContent = `Preset seleccionado: ${level} (${presetValues[level - 1]}%)`;
+  } else {
+    selectedPresetEl.textContent = 'Preset seleccionado: --';
+  }
+  document.querySelectorAll('.speed-btn').forEach((btn, index) => {
+    btn.classList.toggle('active', index === level - 1);
+  });
+}
+
+async function actualizarVelActual() {
+  if (!speedStatusEl) return;
+  try {
+    const res = await fetch('/getVelocidad');
+    if (!res.ok) return;
+    const data = await res.json();
+    speedStatusEl.textContent = `Velocidad actual: ${data.velocidad}%`;
+  } catch (err) {
+    console.error('Error cargando velocidad:', err);
+  }
+}
+
+function applySpeed(level) {
+  if (modoActual !== 'manual') {
+    alert('Solo funciona en modo manual.');
+    return;
+  }
+  const buttons = document.querySelectorAll('.speed-btn');
+  buttons.forEach(btn => btn.disabled = true);
+  fetch(`/setSpeedLevel?mode=manual&level=${level}`).then(res => {
+    if (res.status === 429) alert('Cambio de velocidad muy rápido, espera.');
+    else actualizarPresetUI(level);
+  }).catch(err => console.error(err)).finally(() => {
+    setTimeout(() => buttons.forEach(b => b.disabled = false), 800);
+    actualizarVelActual();
+  });
+}
+
+document.getElementById('mvel1').addEventListener('click', () => applySpeed(1));
+document.getElementById('mvel2').addEventListener('click', () => applySpeed(2));
+document.getElementById('mvel3').addEventListener('click', () => applySpeed(3));
+
+async function refrescarTodo() {
+  await refrescarModo();
+  await actualizarVelActual();
+}
+
+refrescarTodo();
+setInterval(refrescarTodo, 2500);
+</script>
+</body>
+</html>

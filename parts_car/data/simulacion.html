@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Simulación — Purificador / Robot</title>
+<style>
+:root{--bg:#071028;--card:#071a2a;--accent:#06b6d4;--ok:#10b981;--warn:#f59e0b;--crit:#ef4444;--muted:#94a3b8}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071028,#081428);color:#e6eef0}
+.container{max-width:980px;margin:24px auto;padding:18px}
+.header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.header h1{font-size:20px;margin:0}
+.panel{display:grid;grid-template-columns:1fr 360px;gap:18px}
+.card{background:rgba(255,255,255,0.02);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
+.simulator{display:flex;gap:16px;align-items:flex-start}
+.tank{width:260px;padding:12px;border-radius:10px;background:linear-gradient(180deg,#081524,#06121a);border:1px solid rgba(255,255,255,0.02)}
+.tank-label{font-size:13px;color:var(--muted);margin-bottom:6px}
+.liquid{height:160px;background:linear-gradient(180deg,#002b36,#003b45);border-radius:8px;position:relative;overflow:hidden;display:flex;align-items:flex-end;justify-content:center}
+.pct{position:absolute;top:8px;left:10px;font-size:13px;color:var(--muted);}
+.level{width:100%;height:60%;background:linear-gradient(180deg,#00ffd0,#00b39a);display:block;transition:height 0.5s ease}
+.fan{width:120px;height:120px;border-radius:12px;background:linear-gradient(180deg,#071a2a,#05121a);display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.03)}
+.blades{width:68px;height:68px;border-radius:50%;position:relative}
+.blades::before{content:'';position:absolute;inset:0;border-radius:50%;background:conic-gradient(#00ffff11,#00ffff33)}
+@keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+.blades.spinning { animation: spin 0.7s linear infinite; }
+.level { transition: height 0.5s ease, background 0.4s ease; box-shadow: 0 6px 18px rgba(0,0,0,0.4) inset; }
+.controls{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.controls button{background:#0b2530;border:none;padding:8px 10px;border-radius:8px;color:#e6eef0;cursor:pointer}
+.controls .ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+.status-row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.status{padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
+.sensor-visual{display:flex;gap:10px;flex-direction:column}
+.sensor{background:#081728;padding:10px;border-radius:8px;border:1px solid rgba(0,255,255,0.04)}
+.sensor h4{margin:0 0 8px;font-size:14px;color:#00ffff}
+.bar{width:200px;height:12px;background:#022;border-radius:6px;overflow:hidden}
+.bar > i{display:block;height:100%;background:linear-gradient(90deg,#00ffd0,#00b39a);width:40%}
+.footer-links{margin-top:12px;display:flex;gap:8px}
+.small{font-size:13px;color:var(--muted)}
+@media(max-width:900px){.panel{grid-template-columns:1fr}.simulator{flex-direction:column;align-items:center}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>Simulación — Purificador / Robot</h1>
+      <div class="small">Interfaz dedicada para pruebas y visualización de datos</div>
+    </div>
+    <div class="small">ESP32 — 192.168.4.1</div>
+  </div>
+
+  <div class="panel">
+    <div>
+      <div class="card">
+        <h3>Simulador MQ-135</h3>
+        <div class="simulator">
+          <div class="tank">
+            <div class="tank-label">Concentración (sim)</div>
+            <div class="liquid" id="liquid">
+              <div class="pct" id="pct">0%</div>
+              <div class="level" id="level" style="height:10%"></div>
+            </div>
+            <div class="status-row">
+              <div class="status" id="statTxt">Apagado</div>
+              <div class="status">Lectura: <strong id="gasVal">0</strong></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="fan" id="fanVisual">
+              <div class="blades" id="blades"></div>
+            </div>
+
+            <div class="controls">
+              <div style="display:flex;gap:8px">
+                <button id="btnOn" class="">Encender</button>
+                <button id="btnOff" class="ghost">Apagar</button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button id="simDec" class="ghost">Sim bajar</button>
+                <button id="simInc">Sim subir</button>
+                <button id="simSpike" class="ghost">Pico</button>
+                <button id="simStop" class="ghost">Parar</button>
+              </div>
+              <div class="footer-links">
+                <button onclick="location.href='index.html'" class="ghost">Volver</button>
+                <button onclick="location.href='control.html'">Ir a control</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+        <div class="small">Velocímetro del robot</div>
+        <input id="velSim" type="range" min="0" max="100" value="0" style="width:100%;margin-top:8px">
+
+      </div>
+
+      <div style="height:14px"></div>
+
+      <div class="card" id="logCard">
+        <h3>Registro de eventos</h3>
+        <div id="logArea" style="max-height:220px;overflow:auto;font-size:13px;color:var(--muted)"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Monitor de sensores</h3>
+      <div class="sensor-visual">
+        <div class="sensor">
+          <h4>Frontal</h4>
+          <div class="bar"><i id="barFront" style="width:20%"></i></div>
+          <div class="small">Distancia: <strong id="distFront">--</strong> cm</div>
+        </div>
+        <div class="sensor" style="margin-top:8px">
+          <h4>Izquierdo</h4>
+          <div class="bar"><i id="barLeft" style="width:30%"></i></div>
+          <div class="small">Distancia: <strong id="distLeft">--</strong> cm</div>
+        </div>
+        <div class="sensor" style="margin-top:8px">
+          <h4>Derecho</h4>
+          <div class="bar"><i id="barRight" style="width:40%"></i></div>
+          <div class="small">Distancia: <strong id="distRight">--</strong> cm</div>
+        </div>
+      </div>
+
+      <hr style="margin:12px 0;border:none;border-top:1px solid rgba(255,255,255,0.03)">
+      <div class="small">Controles remotos</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="fetch('/forward?vel=50').catch(()=>{})">Adelante</button>
+        <button onclick="fetch('/stop').catch(()=>{})" class="ghost">Parar</button>
+        <button onclick="fetch('/setMode?mode=autonomo').catch(()=>{})" class="ghost">Modo Autónomo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let simValue = 20;
+  const pct = document.getElementById('pct');
+  const level = document.getElementById('level');
+  const gasVal = document.getElementById('gasVal');
+  const statTxt = document.getElementById('statTxt');
+  const blades = document.getElementById('blades');
+  const logArea = document.getElementById('logArea');
+  const velSim = document.getElementById('velSim');
+  const barFront = document.getElementById('barFront');
+  const barLeft = document.getElementById('barLeft');
+  const barRight = document.getElementById('barRight');
+
+  let fanOn = false;
+  // tasa de filtrado base (por tick)
+  function filterRate() { return Math.max(1, Math.round(Number(velSim.value || 0) / 20)); }
+
+  function colorFromValue(v){ // 0 -> green, 100 -> red
+    const hue = Math.max(0, Math.min(120, 120 - (v * 1.2))); // 120..0
+    return `hsl(${hue}, 75%, 50%)`;
+  }
+
+  function updateUI(){
+    pct.textContent = simValue + '%';
+    gasVal.textContent = simValue;
+    level.style.height = Math.min(100,Math.max(6,simValue)) + '%';
+    // color mapping green(0) -> red(100)
+    const c = colorFromValue(simValue);
+    level.style.background = `linear-gradient(180deg, ${c}, ${c.replace('50%)','40%)')})`;
+    pct.style.color = c;
+    gasVal.style.color = c;
+    dist = 100 - Math.round(simValue*0.6);
+    document.getElementById('distFront').textContent = dist;
+    document.getElementById('distLeft').textContent = dist + 6;
+    document.getElementById('distRight').textContent = dist - 4;
+    barFront.style.width = Math.min(100, (dist/100)*100) + '%';
+    barLeft.style.width = Math.min(100, ((dist+6)/100)*100) + '%';
+    barRight.style.width = Math.min(100, ((dist-4)/100)*100) + '%';
+    // color bars according to front concentration mapping
+    const col = colorFromValue(simValue);
+    barFront.style.background = `linear-gradient(90deg, ${col}, ${col.replace('50%)','40%)')})`;
+    barLeft.style.background = `linear-gradient(90deg, ${col}, ${col.replace('50%)','40%)')})`;
+    barRight.style.background = `linear-gradient(90deg, ${col}, ${col.replace('50%)','40%)')})`;
+  }
+
+  function log(msg){
+    const d = new Date().toLocaleTimeString();
+    logArea.innerHTML = `<div>[${d}] ${msg}</div>` + logArea.innerHTML;
+  }
+
+  document.getElementById('simInc').addEventListener('click', ()=>{ simValue = Math.min(100, simValue+5); updateUI(); log('Simulación aumentada'); });
+  document.getElementById('simDec').addEventListener('click', ()=>{ simValue = Math.max(0, simValue-5); updateUI(); log('Simulación reducida'); });
+  document.getElementById('simSpike').addEventListener('click', ()=>{ simValue = Math.min(100, simValue+30); updateUI(); log('Pico simulado'); });
+  document.getElementById('simStop').addEventListener('click', ()=>{ simValue = 0; updateUI(); log('Simulación parada'); });
+  document.getElementById('btnOn').addEventListener('click', ()=>{ statTxt.textContent = 'Encendido'; fanOn = true; blades.classList.add('spinning'); log('Purificador encendido'); });
+  document.getElementById('btnOff').addEventListener('click', ()=>{ statTxt.textContent = 'Apagado'; fanOn = false; blades.classList.remove('spinning'); log('Purificador apagado'); });
+
+  velSim.addEventListener('input', ()=>{ log('Velocidad simulada: '+velSim.value+'%'); fetch('/set_velocidad_auto?valor='+velSim.value).catch(()=>{}); });
+
+  // Filtrado automático: si el ventilador está encendido, reducir la concentración
+  setInterval(()=>{
+    if (!fanOn) return;
+    const rate = filterRate();
+    if (simValue <= 0) { simValue = 0; updateUI(); return; }
+    simValue = Math.max(0, simValue - rate);
+    updateUI();
+    // log ocasional cuando baja mucho
+    if (simValue % 10 === 0) log('Filtrado activo, nivel: '+simValue+'%');
+  }, 900);
+
+  updateUI();
+
+  // optional: poll real sensors if available
+  setInterval(async ()=>{
+    try{
+      const res = await fetch('/ultrasonic'); if (!res.ok) return; const data = await res.json(); if (data){ document.getElementById('distFront').textContent = data.front; document.getElementById('distLeft').textContent = data.left; document.getElementById('distRight').textContent = data.right; }
+    }catch(e){}
+  },1200);
+
+})();
+</script>
+
+</body>
+</html>
